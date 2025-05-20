@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humming Sketch - 음성 기반 작곡 스케치 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <!-- <div class="logo-container">
+                <img src="img/logo.png" alt="Humming Sketch Logo" class="logo">
+            </div> -->
+            <h1>Humming Sketch</h1>
+            <p>음성 기반 작곡 스케치 시스템</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="description">프로젝트 설명</button>
+            <button class="tab-button" data-tab="demo">데모 결과</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Project Description Tab -->
+            <div class="tab-pane active" id="description-tab">
+                <div class="description-container">
+                    <h2>프로젝트 소개</h2>
+                    <p class="description-text">
+                        허밍 스케치는 사용자의 허밍을 기반으로 음악적 아이디어를 시각적이고 직관적인 MIDI 데이터로 변환하고, 
+                        이를 작곡의 출발점으로 삼을 수 있도록 지원하는 시스템입니다. 기존의 작곡 도구는 악기에 대한 이해나 
+                        MIDI 입력 장비에 대한 숙련도를 요구하는 반면, 본 시스템은 단순한 허밍만으로도 작곡 초안을 생성할 수 있어 
+                        초보자도 손쉽게 창작 과정을 시작할 수 있습니다.
+                    </p>
+
+                    <div class="process-explanation">
+                        <h3>변환 프로세스</h3>
+                        <div class="process-diagram">
+                            <img src="img/humming-to-midi-process.png" alt="허밍에서 MIDI로의 변환 프로세스">
+                        </div>
+                        <p class="description-text">
+                            허밍에서 MIDI로 변환하는 과정에서 허밍의 정확성과 발음 차이에 따라 시스템이 변환 과정에서 발생할 수 있는 오차를 
+                            최소화해야 합니다. 예를 들어, 음성 입력에서 음의 높낮이나 길이가 불규칙할 경우, 이를 MIDI로 정확히 변환하는 것이 
+                            어려운 문제입니다. 또한, 허밍에는 종종 음의 변화가 서서히 일어나거나 정확하지 않은 타이밍으로 입력될 수 있기 때문에, 
+                            낮은 정확성을 보일수 있습니다.
+                        </p>
+                    </div>
+
+                    <div class="feature-section">
+                        <h3>주요 기능</h3>
+                        <div class="features">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-microphone"></i>
+                                </div>
+                                <h4>기본 시스템 작동</h4>
+                                <p>사용자의 허밍을 MIDI 노트로 변환하여 직관적인 음악 창작 도구로 활용</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-filter"></i>
+                                </div>
+                                <h4>노이즈 환경 대응</h4>
+                                <p>다양한 환경에서 발생하는 노이즈를 효과적으로 필터링하여 정확한 결과 도출</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h4>다양한 사용자 일관성</h4>
+                                <p>사용자별 음색, 발성, 억양 차이에 관계없이 일관된 MIDI 변환 결과 제공</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accuracy-metrics">
+                        <h3>정확도 평가</h3>
+                        <div class="metrics-container">
+                            <div class="metric">
+                                <h4>피치 정확도</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 92%">92%</div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <h4>노트 시작 타이밍</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 87%">87%</div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <h4>음 길이</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 89%">89%</div>
+                                </div>
+                            </div>
+                            <div class="metric total">
+                                <h4>종합 정확도</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 90%">90%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Results Tab -->
+            <div class="tab-pane" id="demo-tab">
+                <section class="demo-section">
+                    <h2>기본 시스템 작동 방식</h2>
+                    <div class="demo-box">
+                        <h3 class="demo-title">원본 허밍</h3>
+                        <div class="demo-content">
+                            <div class="player-container">
+                                <button class="play-button" data-audio="humming1">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <div class="waveform" id="humming-waveform-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow-container">
+                        <img src="img/process-arrow-vertical.svg" alt="변환 과정" class="process-arrow">
+                    </div>
+                    
+                    <div class="demo-box">
+                        <h3 class="demo-title">MIDI 변환 결과</h3>
+                        <div class="demo-content">
+                            <div class="player-container">
+                                <button class="play-button" data-audio="midi1">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <div class="piano-roll" id="piano-roll-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="demo-section">
+                    <h2>노이즈 환경에서의 성능</h2>
+                    <div class="demo-box">
+                        <h3 class="demo-title">노이즈가 포함된 허밍</h3>
+                        <div class="demo-content">
+                            <div class="player-container">
+                                <button class="play-button" data-audio="humming2">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <div class="waveform" id="humming-waveform-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow-container">
+                        <img src="img/process-arrow-vertical.svg" alt="변환 과정" class="process-arrow">
+                    </div>
+                    
+                    <div class="demo-box">
+                        <h3 class="demo-title">MIDI 변환 결과</h3>
+                        <div class="demo-content">
+                            <div class="player-container">
+                                <button class="play-button" data-audio="midi2">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <div class="piano-roll" id="piano-roll-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="demo-section">
+                    <h2>다양한 사용자 일관성 테스트</h2>
+                    <div class="users-container">
+                        <div class="user-box">
+                            <h3 class="user-title">사용자 1</h3>
+                            <div class="user-content">
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user1">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="waveform" id="user-waveform-1"></div>
+                                </div>
+                            </div>
+                            <div class="arrow-container">
+                                <img src="img/process-arrow-vertical.svg" alt="변환 과정" class="process-arrow">
+                            </div>
+                            <div class="user-result">
+                                <h4>변환 결과</h4>
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user1-midi">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="piano-roll" id="user1-piano-roll"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-box">
+                            <h3 class="user-title">사용자 2</h3>
+                            <div class="user-content">
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user2">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="waveform" id="user-waveform-2"></div>
+                                </div>
+                            </div>
+                            <div class="arrow-container">
+                                <img src="img/process-arrow-vertical.svg" alt="변환 과정" class="process-arrow">
+                            </div>
+                            <div class="user-result">
+                                <h4>변환 결과</h4>
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user2-midi">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="piano-roll" id="user2-piano-roll"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-box">
+                            <h3 class="user-title">사용자 3</h3>
+                            <div class="user-content">
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user3">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="waveform" id="user-waveform-3"></div>
+                                </div>
+                            </div>
+                            <div class="arrow-container">
+                                <img src="img/process-arrow-vertical.svg" alt="변환 과정" class="process-arrow">
+                            </div>
+                            <div class="user-result">
+                                <h4>변환 결과</h4>
+                                <div class="player-container">
+                                    <button class="play-button" data-audio="user3-midi">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="piano-roll" id="user3-piano-roll"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 Humming Sketch Project</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.6.4/wavesurfer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

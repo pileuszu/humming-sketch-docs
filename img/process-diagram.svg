@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Central Process Node -->
+  <circle cx="150" cy="100" r="50" fill="#e8f0fe" stroke="#4285f4" stroke-width="2"/>
+  <text x="150" y="105" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">일관성 분석</text>
+  
+  <!-- Input Arrows -->
+  <path d="M50,40 L120,80" stroke="#4285f4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M50,100 L100,100" stroke="#4285f4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M50,160 L120,120" stroke="#4285f4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Output Arrow -->
+  <path d="M200,100 L250,100" stroke="#34a853" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Arrow Heads -->
+  <polygon points="115,80 105,75 110,85" fill="#4285f4"/>
+  <polygon points="95,100 85,95 85,105" fill="#4285f4"/>
+  <polygon points="115,120 105,125 110,115" fill="#4285f4"/>
+  <polygon points="245,100 235,95 235,105" fill="#34a853"/>
+  
+  <!-- Input Labels -->
+  <text x="40" y="40" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">사용자 1</text>
+  <text x="40" y="100" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">사용자 2</text>
+  <text x="40" y="160" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">사용자 3</text>
+  
+  <!-- Output Label -->
+  <text x="260" y="100" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">통합 결과</text>
+</svg> 
