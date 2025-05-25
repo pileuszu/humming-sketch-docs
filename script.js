@@ -1,415 +1,767 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab Navigation
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // Remove active class from all buttons and panes
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabPanes.forEach(pane => pane.classList.remove('active'));
-            
-            // Add active class to clicked button and corresponding pane
-            button.classList.add('active');
-            const tabId = button.getAttribute('data-tab');
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-        });
-    });
+    // ===== GLOBAL VARIABLES =====
+    const audioPlayers = {};
+    const waveforms = {};
+    let currentSection = 'intro';
+    let currentUser = '1';
 
-    // Audio file paths - these are sample paths, replace with actual files
+    // ===== AUDIO FILES CONFIGURATION =====
     const audioFiles = {
-        // Sample humming files
+        // Original humming samples
         'humming1': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'humming2': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'user1': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'user2': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'user3': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         
-        // Sample MIDI results
-        'midi1': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',   
+        // Conversion results
+        'midi1': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'midi2': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'user1-midi': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
         'user2-midi': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
-        'user3-midi': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3'
+        'user3-midi': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
+        
+        // Ground truth MIDI files
+        'ground-truth1': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
+        'ground-truth2': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
+        'user1-ground-truth': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
+        'user2-ground-truth': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3',
+        'user3-ground-truth': 'https://cdn.pixabay.com/download/audio/2021/08/08/audio_88447e769f.mp3?filename=piano-moment-9835.mp3'
     };
 
-    // MIDI data for visualization - these would be the actual MIDI note data from your system
+    // ===== MIDI DATA FOR VISUALIZATION =====
     const midiData = {
+        // Basic system demo
         'piano-roll-1': [
-            { note: 60, start: 0, duration: 0.5 },   // C4
-            { note: 62, start: 0.5, duration: 0.5 },  // D4
-            { note: 64, start: 1, duration: 0.5 },    // E4
-            { note: 65, start: 1.5, duration: 0.5 },  // F4
-            { note: 67, start: 2, duration: 1 },      // G4
-            { note: 69, start: 3, duration: 1 },      // A4
-            { note: 71, start: 4, duration: 0.5 },    // B4
-            { note: 72, start: 4.5, duration: 1.5 }   // C5
+            { note: 60, start: 0, duration: 0.5, velocity: 80 },
+            { note: 62, start: 0.5, duration: 0.5, velocity: 75 },
+            { note: 64, start: 1, duration: 0.5, velocity: 85 },
+            { note: 65, start: 1.5, duration: 0.5, velocity: 78 },
+            { note: 67, start: 2, duration: 1, velocity: 90 },
+            { note: 69, start: 3, duration: 1, velocity: 82 },
+            { note: 71, start: 4, duration: 0.5, velocity: 88 },
+            { note: 72, start: 4.5, duration: 1.5, velocity: 95 }
         ],
+        'ground-truth-roll-1': [
+            { note: 60, start: 0, duration: 0.5, velocity: 80 },
+            { note: 62, start: 0.5, duration: 0.5, velocity: 80 },
+            { note: 64, start: 1, duration: 0.5, velocity: 80 },
+            { note: 65, start: 1.5, duration: 0.5, velocity: 80 },
+            { note: 67, start: 2, duration: 1, velocity: 80 },
+            { note: 69, start: 3, duration: 1, velocity: 80 },
+            { note: 71, start: 4, duration: 0.5, velocity: 80 },
+            { note: 72, start: 4.5, duration: 1.5, velocity: 80 }
+        ],
+        
+        // Noisy environment demo
         'piano-roll-2': [
-            { note: 62, start: 0, duration: 0.5 },    // D4
-            { note: 64, start: 0.5, duration: 0.5 },  // E4
-            { note: 65, start: 1, duration: 1 },      // F4
-            { note: 67, start: 2, duration: 0.5 },    // G4
-            { note: 69, start: 2.5, duration: 0.5 },  // A4
-            { note: 67, start: 3, duration: 1 },      // G4
-            { note: 65, start: 4, duration: 0.5 },    // F4
-            { note: 64, start: 4.5, duration: 0.5 },  // E4
-            { note: 62, start: 5, duration: 1 }       // D4
+            { note: 62, start: 0, duration: 0.5, velocity: 70 },
+            { note: 64, start: 0.5, duration: 0.5, velocity: 68 },
+            { note: 65, start: 1, duration: 1, velocity: 75 },
+            { note: 67, start: 2, duration: 0.5, velocity: 72 },
+            { note: 69, start: 2.5, duration: 0.5, velocity: 78 },
+            { note: 67, start: 3, duration: 1, velocity: 74 },
+            { note: 65, start: 4, duration: 0.5, velocity: 71 },
+            { note: 64, start: 4.5, duration: 0.5, velocity: 69 },
+            { note: 62, start: 5, duration: 1, velocity: 73 }
         ],
+        'ground-truth-roll-2': [
+            { note: 62, start: 0, duration: 0.5, velocity: 80 },
+            { note: 64, start: 0.5, duration: 0.5, velocity: 80 },
+            { note: 65, start: 1, duration: 1, velocity: 80 },
+            { note: 67, start: 2, duration: 0.5, velocity: 80 },
+            { note: 69, start: 2.5, duration: 0.5, velocity: 80 },
+            { note: 67, start: 3, duration: 1, velocity: 80 },
+            { note: 65, start: 4, duration: 0.5, velocity: 80 },
+            { note: 64, start: 4.5, duration: 0.5, velocity: 80 },
+            { note: 62, start: 5, duration: 1, velocity: 80 }
+        ],
+        
+        // User consistency tests
         'user1-piano-roll': [
-            { note: 60, start: 0, duration: 0.5 },    // C4
-            { note: 62, start: 0.5, duration: 0.5 },  // D4
-            { note: 64, start: 1, duration: 0.5 },    // E4
-            { note: 65, start: 1.5, duration: 0.5 },  // F4
-            { note: 67, start: 2, duration: 1 },      // G4
-            { note: 69, start: 3, duration: 1 },      // A4
+            { note: 60, start: 0, duration: 0.5, velocity: 82 },
+            { note: 62, start: 0.5, duration: 0.5, velocity: 79 },
+            { note: 64, start: 1, duration: 0.5, velocity: 85 },
+            { note: 65, start: 1.5, duration: 0.5, velocity: 81 },
+            { note: 67, start: 2, duration: 1, velocity: 88 },
+            { note: 69, start: 3, duration: 1, velocity: 84 }
         ],
+        'user1-ground-truth-roll': [
+            { note: 60, start: 0, duration: 0.5, velocity: 80 },
+            { note: 62, start: 0.5, duration: 0.5, velocity: 80 },
+            { note: 64, start: 1, duration: 0.5, velocity: 80 },
+            { note: 65, start: 1.5, duration: 0.5, velocity: 80 },
+            { note: 67, start: 2, duration: 1, velocity: 80 },
+            { note: 69, start: 3, duration: 1, velocity: 80 }
+        ],
+        
         'user2-piano-roll': [
-            { note: 60, start: 0, duration: 0.5 },    // C4
-            { note: 64, start: 0.5, duration: 0.5 },  // E4
-            { note: 67, start: 1, duration: 1 },      // G4
-            { note: 72, start: 2, duration: 1 },      // C5
-            { note: 71, start: 3, duration: 0.5 },    // B4
+            { note: 60, start: 0, duration: 0.5, velocity: 76 },
+            { note: 64, start: 0.5, duration: 0.5, velocity: 73 },
+            { note: 67, start: 1, duration: 1, velocity: 79 },
+            { note: 72, start: 2, duration: 1, velocity: 81 },
+            { note: 71, start: 3, duration: 0.5, velocity: 77 }
         ],
+        'user2-ground-truth-roll': [
+            { note: 60, start: 0, duration: 0.5, velocity: 80 },
+            { note: 64, start: 0.5, duration: 0.5, velocity: 80 },
+            { note: 67, start: 1, duration: 1, velocity: 80 },
+            { note: 72, start: 2, duration: 1, velocity: 80 },
+            { note: 71, start: 3, duration: 0.5, velocity: 80 }
+        ],
+        
         'user3-piano-roll': [
-            { note: 62, start: 0, duration: 0.5 },    // D4
-            { note: 65, start: 0.5, duration: 0.5 },  // F4
-            { note: 67, start: 1, duration: 1 },      // G4
-            { note: 69, start: 2, duration: 0.5 },    // A4
-            { note: 71, start: 2.5, duration: 0.5 },  // B4
-            { note: 72, start: 3, duration: 1 },      // C5
+            { note: 62, start: 0, duration: 0.5, velocity: 78 },
+            { note: 65, start: 0.5, duration: 0.5, velocity: 75 },
+            { note: 67, start: 1, duration: 1, velocity: 83 },
+            { note: 69, start: 2, duration: 0.5, velocity: 80 },
+            { note: 71, start: 2.5, duration: 0.5, velocity: 86 },
+            { note: 72, start: 3, duration: 1, velocity: 89 }
+        ],
+        'user3-ground-truth-roll': [
+            { note: 62, start: 0, duration: 0.5, velocity: 80 },
+            { note: 65, start: 0.5, duration: 0.5, velocity: 80 },
+            { note: 67, start: 1, duration: 1, velocity: 80 },
+            { note: 69, start: 2, duration: 0.5, velocity: 80 },
+            { note: 71, start: 2.5, duration: 0.5, velocity: 80 },
+            { note: 72, start: 3, duration: 1, velocity: 80 }
         ]
     };
-    
-    // Audio players for each audio
-    const audioPlayers = {};
 
-    // Initialize wavesurfer instances for audio visualization
-    const waveforms = {};
-    
-    // Create waveform for each humming audio
-    initWaveform('humming-waveform-1', audioFiles.humming1);
-    initWaveform('humming-waveform-2', audioFiles.humming2);
-    initWaveform('user-waveform-1', audioFiles.user1);
-    initWaveform('user-waveform-2', audioFiles.user2);
-    initWaveform('user-waveform-3', audioFiles.user3);
+    // ===== INITIALIZATION =====
+    init();
 
-    // Initialize piano rolls for MIDI visualization
-    renderPianoRoll('piano-roll-1', midiData['piano-roll-1']);
-    renderPianoRoll('piano-roll-2', midiData['piano-roll-2']);
-    renderPianoRoll('user1-piano-roll', midiData['user1-piano-roll']);
-    renderPianoRoll('user2-piano-roll', midiData['user2-piano-roll']);
-    renderPianoRoll('user3-piano-roll', midiData['user3-piano-roll']);
+    function init() {
+        setupNavigation();
+        setupUserTabs();
+        setupAudioPlayers();
+        setupWaveforms();
+        setupPianoRolls();
+        setupAnimations();
+        preloadAudio();
+        
+        console.log('🎵 Humming Sketch initialized successfully!');
+    }
 
-    // Set up play buttons
-    const playButtons = document.querySelectorAll('.play-button');
-    
-    playButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const audioId = this.getAttribute('data-audio');
-            togglePlayPause(audioId, this);
+    // ===== NAVIGATION SYSTEM =====
+    function setupNavigation() {
+        const journeySteps = document.querySelectorAll('.journey-step');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        journeySteps.forEach(step => {
+            step.addEventListener('click', () => {
+                const targetStep = step.getAttribute('data-step');
+                navigateToSection(targetStep);
+            });
         });
-    });
 
-    // Preload audio files
+        // Mobile nav toggle
+        const navToggle = document.getElementById('navToggle');
+        if (navToggle) {
+            navToggle.addEventListener('click', toggleMobileNav);
+        }
+    }
+
+    function navigateToSection(sectionName) {
+        // Update active step
+        document.querySelectorAll('.journey-step').forEach(step => {
+            step.classList.remove('active');
+        });
+        document.querySelector(`[data-step="${sectionName}"]`).classList.add('active');
+
+        // Update active section
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        document.getElementById(`${sectionName}-section`).classList.add('active');
+
+        currentSection = sectionName;
+
+        // Trigger section-specific animations
+        triggerSectionAnimations(sectionName);
+    }
+
+    function toggleMobileNav() {
+        const navToggle = document.getElementById('navToggle');
+        navToggle.classList.toggle('active');
+        // Add mobile menu functionality if needed
+    }
+
+    // ===== USER TABS SYSTEM =====
+    function setupUserTabs() {
+        const userTabs = document.querySelectorAll('.user-tab');
+        const userContents = document.querySelectorAll('.user-content');
+
+        userTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const userId = tab.getAttribute('data-user');
+                switchUser(userId);
+            });
+        });
+    }
+
+    function switchUser(userId) {
+        // Update active tab
+        document.querySelectorAll('.user-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-user="${userId}"]`).classList.add('active');
+
+        // Update active content
+        document.querySelectorAll('.user-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`user-${userId}`).classList.add('active');
+
+        currentUser = userId;
+
+        // Reinitialize visualizations for the new user
+        setTimeout(() => {
+            initializeUserVisualizations(userId);
+        }, 100);
+    }
+
+    // ===== AUDIO PLAYER SYSTEM =====
+    function setupAudioPlayers() {
+        const playButtons = document.querySelectorAll('.play-btn');
+        
+        playButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const audioId = this.getAttribute('data-audio');
+                togglePlayPause(audioId, this);
+            });
+        });
+    }
+
     function preloadAudio() {
         Object.keys(audioFiles).forEach(id => {
             const audio = new Audio();
             audio.src = audioFiles[id];
+            audio.preload = 'metadata';
             audioPlayers[id] = audio;
             
-            // When audio ends, reset button
-            audio.onended = function() {
-                playButtons.forEach(btn => {
-                    if (btn.getAttribute('data-audio') === id) {
-                        resetButton(btn);
-                    }
-                });
-            };
-        });
-        console.log('Audio files preloaded');
-    }
-    
-    // Call preload function
-    preloadAudio();
-
-    // Function to initialize waveform visualization
-    function initWaveform(id, audioSrc) {
-        const container = document.getElementById(id);
-        
-        if (!container) return;
-
-        // Add grid lines first
-        addGridLinesToWaveform(id);
-        
-        waveforms[id] = WaveSurfer.create({
-            container: '#' + id,
-            waveColor: 'rgba(66, 133, 244, 0.8)',
-            progressColor: 'rgba(30, 64, 175, 0.9)',
-            cursorColor: '#4285f4',
-            barWidth: 1.5,
-            barRadius: 2,
-            cursorWidth: 0,
-            height: 60,
-            barGap: 1,
-            responsive: true,
-            normalize: true,
-            fillParent: true,
-            minPxPerSec: 25,  // Reduced to make the waveform more compact
-            align: 'center',
-            mediaControls: false,
-            backend: 'WebAudio',
-            interact: false,
-            autoCenter: true,
-            partialRender: true,
-            scrollParent: false,  // Prevent scrolling
-            pixelRatio: 1,  // Optimize rendering
-        });
-        
-        waveforms[id].load(audioSrc);
-
-        // Ensure waveform container is above grid and fits within box
-        const waveformWrapper = container.querySelector('wave');
-        if (waveformWrapper) {
-            waveformWrapper.style.position = 'relative';
-            waveformWrapper.style.zIndex = '20';
-            waveformWrapper.style.width = '100%';
-            waveformWrapper.style.overflow = 'hidden';
-        }
-
-        // Also ensure the canvas is above grid and fits
-        const canvas = container.querySelector('canvas');
-        if (canvas) {
-            canvas.style.position = 'relative';
-            canvas.style.zIndex = '20';
-            canvas.style.width = '100%';
-            canvas.style.maxWidth = '100%';
-        }
-        
-        // Add waveform progress update to match audio player
-        const relatedAudioId = getAudioIdFromWaveformId(id);
-        if (relatedAudioId && audioPlayers[relatedAudioId]) {
-            const audioPlayer = audioPlayers[relatedAudioId];
-            
-            audioPlayer.addEventListener('timeupdate', function() {
-                const progress = audioPlayer.currentTime / audioPlayer.duration;
-                if (!isNaN(progress)) {
-                    waveforms[id].seekTo(progress);
-                }
+            // Setup event listeners
+            audio.addEventListener('ended', () => {
+                resetButton(getButtonForAudio(id));
             });
-        }
-    }
-    
-    // Add visual grid lines to waveform for better alignment
-    function addGridLinesToWaveform(id) {
-        const container = document.getElementById(id);
-        if (!container) return;
-        
-        // Create grid line overlay
-        const gridOverlay = document.createElement('div');
-        gridOverlay.className = 'grid-overlay';
-        gridOverlay.style.position = 'absolute';
-        gridOverlay.style.top = '0';
-        gridOverlay.style.left = '0';
-        gridOverlay.style.width = '100%';
-        gridOverlay.style.height = '100%';
-        gridOverlay.style.pointerEvents = 'none';
-        gridOverlay.style.zIndex = '1';
-        
-        // Create vertical centerline
-        const vLine = document.createElement('div');
-        vLine.style.position = 'absolute';
-        vLine.style.top = '0';
-        vLine.style.left = '50%';
-        vLine.style.width = '1px';
-        vLine.style.height = '100%';
-        vLine.style.backgroundColor = 'rgba(66, 133, 244, 0.2)';
-        
-        // Create horizontal centerline
-        const hLine = document.createElement('div');
-        hLine.style.position = 'absolute';
-        hLine.style.top = '50%';
-        hLine.style.left = '0';
-        hLine.style.width = '100%';
-        hLine.style.height = '1px';
-        hLine.style.backgroundColor = 'rgba(66, 133, 244, 0.2)';
-        
-        gridOverlay.appendChild(vLine);
-        gridOverlay.appendChild(hLine);
-        container.appendChild(gridOverlay);
 
-        // Ensure container has relative positioning
-        container.style.position = 'relative';
-    }
-    
-    // Get audio ID from waveform ID
-    function getAudioIdFromWaveformId(waveformId) {
-        if (waveformId === 'humming-waveform-1') return 'humming1';
-        if (waveformId === 'humming-waveform-2') return 'humming2';
-        if (waveformId === 'user-waveform-1') return 'user1';
-        if (waveformId === 'user-waveform-2') return 'user2';
-        if (waveformId === 'user-waveform-3') return 'user3';
-        return null;
+            audio.addEventListener('timeupdate', () => {
+                updateWaveformProgress(id, audio.currentTime / audio.duration);
+            });
+        });
+        
+        console.log('🎵 Audio files preloaded');
     }
 
-    // Function to toggle play/pause
     function togglePlayPause(audioId, button) {
-        // Check if audio player exists for this audio
-        if (!audioPlayers[audioId]) {
-            console.error(`No audio player found for ID: ${audioId}`);
-            return;
-        }
-        
-        // Check if this audio is already playing
-        if (audioPlayers[audioId].paused) {
-            // Pause all other audio first
-            Object.keys(audioPlayers).forEach(id => {
-                if (id !== audioId && !audioPlayers[id].paused) {
-                    audioPlayers[id].pause();
-                    // Reset corresponding button
-                    resetOtherButtons(id);
-                }
-            });
-            
-            // Play this audio
-            audioPlayers[audioId].play().catch(error => {
-                console.error('Audio playback failed:', error);
-                alert('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.');
-            });
-            button.innerHTML = '<i class="fas fa-pause"></i>';
+        const audio = audioPlayers[audioId];
+        if (!audio) return;
+
+        // Stop all other audio
+        stopAllAudio();
+
+        if (audio.paused) {
+            audio.play();
             button.classList.add('playing');
+            button.innerHTML = '<i class="fas fa-pause"></i>';
+            
+            // Add visual feedback
+            addPlayingEffect(button);
         } else {
-            // Pause this audio
-            audioPlayers[audioId].pause();
+            audio.pause();
             resetButton(button);
         }
     }
-    
-    // Reset button to play state
-    function resetButton(button) {
-        button.innerHTML = '<i class="fas fa-play"></i>';
-        button.classList.remove('playing');
+
+    function stopAllAudio() {
+        Object.values(audioPlayers).forEach(audio => {
+            if (!audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+
+        // Reset all buttons
+        document.querySelectorAll('.play-btn').forEach(button => {
+            resetButton(button);
+        });
     }
-    
-    // Reset other buttons based on audioId
-    function resetOtherButtons(audioId) {
-        playButtons.forEach(btn => {
-            if (btn.getAttribute('data-audio') === audioId) {
-                resetButton(btn);
+
+    function resetButton(button) {
+        if (!button) return;
+        
+        button.classList.remove('playing');
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        removePlayingEffect(button);
+    }
+
+    function getButtonForAudio(audioId) {
+        return document.querySelector(`[data-audio="${audioId}"]`);
+    }
+
+    function addPlayingEffect(button) {
+        button.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.5)';
+    }
+
+    function removePlayingEffect(button) {
+        button.style.boxShadow = '';
+    }
+
+    // ===== WAVEFORM VISUALIZATION =====
+    function setupWaveforms() {
+        const waveformContainers = [
+            'humming-wave-1', 'humming-wave-2',
+            'user-wave-1', 'user-wave-2', 'user-wave-3'
+        ];
+
+        waveformContainers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                initWaveform(containerId);
             }
         });
     }
 
-    // Function to render piano roll visualization
-    function renderPianoRoll(id, notes) {
-        const container = document.getElementById(id);
+    function initWaveform(containerId) {
+        const container = document.getElementById(containerId);
         if (!container) return;
-        
-        // Clear existing content
-        container.innerHTML = '';
-        
-        // Add grid overlay
-        addGridLinesToContainer(container);
-        
-        // Find the range of notes for scaling
-        let minNote = 127, maxNote = 0;
-        notes.forEach(note => {
-            minNote = Math.min(minNote, note.note);
-            maxNote = Math.max(maxNote, note.note);
-        });
-        
-        // Add some padding to the range
-        minNote = Math.max(0, minNote - 2);
-        maxNote = Math.min(127, maxNote + 2);
-        const noteRange = maxNote - minNote + 1;
-        
-        // Find max duration for scaling
-        let maxDuration = 0;
-        notes.forEach(note => {
-            maxDuration = Math.max(maxDuration, note.start + note.duration);
-        });
-        
-        // Center notes horizontally if there's extra space
-        const totalWidth = maxDuration / 8; // scale factor
-        let leftOffset = 0;
-        if (totalWidth < 1) {
-            leftOffset = (1 - totalWidth) / 2 * 100;
-        }
-        
-        // Draw the notes
-        notes.forEach(note => {
-            const noteElement = document.createElement('div');
-            noteElement.className = 'midi-note';
-            
-            // Position the note
-            const top = ((maxNote - note.note) / noteRange) * 100;
-            const left = (note.start / maxDuration) * 100;
-            const width = (note.duration / maxDuration) * 100;
-            
-            noteElement.style.position = 'absolute';
-            noteElement.style.top = top + '%';
-            noteElement.style.left = (leftOffset + left) + '%';
-            noteElement.style.width = width + '%';
-            noteElement.style.height = (1 / noteRange) * 100 + '%';
-            noteElement.style.backgroundColor = getColorForNote(note.note);
-            noteElement.style.borderRadius = '3px';
-            noteElement.style.zIndex = '2';
-            
-            container.appendChild(noteElement);
-        });
-    }
-    
-    // Add grid lines to any container
-    function addGridLinesToContainer(container) {
-        // Create grid line overlay
-        const gridOverlay = document.createElement('div');
-        gridOverlay.className = 'grid-overlay';
-        gridOverlay.style.position = 'absolute';
-        gridOverlay.style.top = '0';
-        gridOverlay.style.left = '0';
-        gridOverlay.style.width = '100%';
-        gridOverlay.style.height = '100%';
-        gridOverlay.style.pointerEvents = 'none';
-        gridOverlay.style.zIndex = '1';
-        
-        // Create vertical centerline
-        const vLine = document.createElement('div');
-        vLine.style.position = 'absolute';
-        vLine.style.top = '0';
-        vLine.style.left = '50%';
-        vLine.style.width = '1px';
-        vLine.style.height = '100%';
-        vLine.style.backgroundColor = 'rgba(66, 133, 244, 0.2)';
-        
-        // Create horizontal centerline
-        const hLine = document.createElement('div');
-        hLine.style.position = 'absolute';
-        hLine.style.top = '50%';
-        hLine.style.left = '0';
-        hLine.style.width = '100%';
-        hLine.style.height = '1px';
-        hLine.style.backgroundColor = 'rgba(66, 133, 244, 0.2)';
-        
-        gridOverlay.appendChild(vLine);
-        gridOverlay.appendChild(hLine);
-        container.appendChild(gridOverlay);
-    }
-    
-    // Generate a color based on the note value
-    function getColorForNote(note) {
-        // Map MIDI note to a hue value (0-360)
-        const hue = (note % 12) * 30;
-        return `hsl(${hue}, 70%, 60%)`;
+
+        // Create mock waveform visualization
+        createMockWaveform(container);
     }
 
-    // Create mock directories and files needed for the demo
-    function createMockDirectories() {
-        console.log('Mock directories and files would be created in a real environment');
-        // In a real environment, you would create:
-        // - audio/ directory with mp3 files
-        // - img/ directory with svg files
+    function createMockWaveform(container) {
+        container.innerHTML = '';
+        
+        const waveformData = generateWaveformData(100);
+        const canvas = document.createElement('canvas');
+        canvas.width = container.offsetWidth || 300;
+        canvas.height = container.offsetHeight || 60;
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        
+        const ctx = canvas.getContext('2d');
+        drawWaveform(ctx, waveformData, canvas.width, canvas.height);
+        
+        container.appendChild(canvas);
     }
-    
-    // Call this function in development to log what would be created
-    createMockDirectories();
+
+    function generateWaveformData(points) {
+        const data = [];
+        for (let i = 0; i < points; i++) {
+            const amplitude = Math.sin(i * 0.1) * Math.random() * 0.8 + 0.2;
+            data.push(amplitude);
+        }
+        return data;
+    }
+
+    function drawWaveform(ctx, data, width, height) {
+        const barWidth = width / data.length;
+        const centerY = height / 2;
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, width, 0);
+        gradient.addColorStop(0, '#00d4ff');
+        gradient.addColorStop(0.5, '#8b5cf6');
+        gradient.addColorStop(1, '#f472b6');
+        
+        ctx.fillStyle = gradient;
+        
+        data.forEach((amplitude, index) => {
+            const barHeight = amplitude * centerY;
+            const x = index * barWidth;
+            
+            // Draw bar
+            ctx.fillRect(x, centerY - barHeight, barWidth - 1, barHeight * 2);
+        });
+    }
+
+    function updateWaveformProgress(audioId, progress) {
+        // Update waveform progress visualization
+        const containerId = getWaveformContainerForAudio(audioId);
+        if (containerId) {
+            updateWaveformProgressBar(containerId, progress);
+        }
+    }
+
+    function getWaveformContainerForAudio(audioId) {
+        const mapping = {
+            'humming1': 'humming-wave-1',
+            'humming2': 'humming-wave-2',
+            'user1': 'user-wave-1',
+            'user2': 'user-wave-2',
+            'user3': 'user-wave-3'
+        };
+        return mapping[audioId];
+    }
+
+    function updateWaveformProgressBar(containerId, progress) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        // Add progress overlay
+        let progressBar = container.querySelector('.progress-overlay');
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'progress-overlay';
+            progressBar.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                background: rgba(0, 212, 255, 0.3);
+                pointer-events: none;
+                transition: width 0.1s ease;
+            `;
+            container.appendChild(progressBar);
+        }
+        
+        progressBar.style.width = `${progress * 100}%`;
+    }
+
+    // ===== PIANO ROLL VISUALIZATION =====
+    function setupPianoRolls() {
+        Object.keys(midiData).forEach(rollId => {
+            const container = document.getElementById(rollId);
+            if (container) {
+                renderPianoRoll(rollId, midiData[rollId]);
+            }
+        });
+    }
+
+    function renderPianoRoll(containerId, notes) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = container.offsetWidth || 300;
+        canvas.height = container.offsetHeight || 60;
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        
+        const ctx = canvas.getContext('2d');
+        drawPianoRoll(ctx, notes, canvas.width, canvas.height);
+        
+        container.appendChild(canvas);
+    }
+
+    function drawPianoRoll(ctx, notes, width, height) {
+        if (!notes || notes.length === 0) return;
+        
+        // Find note range
+        const minNote = Math.min(...notes.map(n => n.note));
+        const maxNote = Math.max(...notes.map(n => n.note));
+        const noteRange = maxNote - minNote + 1;
+        
+        // Find time range
+        const maxTime = Math.max(...notes.map(n => n.start + n.duration));
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, width, 0);
+        gradient.addColorStop(0, '#00d4ff');
+        gradient.addColorStop(0.5, '#8b5cf6');
+        gradient.addColorStop(1, '#f472b6');
+        
+        notes.forEach(note => {
+            const x = (note.start / maxTime) * width;
+            const noteWidth = (note.duration / maxTime) * width;
+            const y = ((maxNote - note.note) / noteRange) * height;
+            const noteHeight = height / noteRange;
+            
+            // Set opacity based on velocity
+            const opacity = (note.velocity || 80) / 127;
+            ctx.globalAlpha = opacity;
+            ctx.fillStyle = gradient;
+            
+            // Draw note rectangle
+            ctx.fillRect(x, y, noteWidth, noteHeight);
+            
+            // Add border
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, noteWidth, noteHeight);
+        });
+    }
+
+    function initializeUserVisualizations(userId) {
+        // Reinitialize waveforms and piano rolls for the selected user
+        const waveformId = `user-wave-${userId}`;
+        const pianoRollId = `user${userId}-piano-roll`;
+        const groundTruthId = `user${userId}-ground-truth-roll`;
+        
+        if (document.getElementById(waveformId)) {
+            initWaveform(waveformId);
+        }
+        
+        if (midiData[pianoRollId]) {
+            renderPianoRoll(pianoRollId, midiData[pianoRollId]);
+        }
+        
+        if (midiData[groundTruthId]) {
+            renderPianoRoll(groundTruthId, midiData[groundTruthId]);
+        }
+    }
+
+    // ===== ANIMATIONS AND EFFECTS =====
+    function setupAnimations() {
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        // Observe animated elements
+        document.querySelectorAll('.neon-card, .demo-card, .process-step').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add CSS for animations
+        addAnimationStyles();
+    }
+
+    function addAnimationStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .animate-in {
+                animation: slideInUp 0.6s ease forwards;
+            }
+            
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .progress-overlay {
+                z-index: 10;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function triggerSectionAnimations(sectionName) {
+        const section = document.getElementById(`${sectionName}-section`);
+        if (!section) return;
+
+        // Trigger specific animations based on section
+        switch (sectionName) {
+            case 'intro':
+                animateFeatureCards();
+                break;
+            case 'process':
+                animateProcessSteps();
+                break;
+            case 'demo':
+                animateDemoCards();
+                break;
+            case 'accuracy':
+                animateCharts();
+                break;
+        }
+    }
+
+    function animateFeatureCards() {
+        const cards = document.querySelectorAll('.neon-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.animation = 'slideInUp 0.6s ease forwards';
+            }, index * 200);
+        });
+    }
+
+    function animateProcessSteps() {
+        const steps = document.querySelectorAll('.process-step');
+        steps.forEach((step, index) => {
+            setTimeout(() => {
+                step.style.animation = 'slideInUp 0.6s ease forwards';
+            }, index * 300);
+        });
+    }
+
+    function animateDemoCards() {
+        const cards = document.querySelectorAll('.demo-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.animation = 'slideInUp 0.6s ease forwards';
+            }, index * 400);
+        });
+    }
+
+    function animateCharts() {
+        const chartFills = document.querySelectorAll('.chart-fill, .metric-fill');
+        chartFills.forEach((fill, index) => {
+            setTimeout(() => {
+                const width = fill.style.width;
+                fill.style.width = '0%';
+                setTimeout(() => {
+                    fill.style.width = width;
+                }, 100);
+            }, index * 200);
+        });
+    }
+
+    // ===== ACCURACY COMPARISON SYSTEM =====
+    function calculateAccuracy(convertedNotes, groundTruthNotes) {
+        if (!convertedNotes || !groundTruthNotes) return { pitch: 0, timing: 0, duration: 0 };
+
+        let pitchMatches = 0;
+        let timingMatches = 0;
+        let durationMatches = 0;
+        const tolerance = 0.1; // 100ms tolerance
+
+        convertedNotes.forEach(convertedNote => {
+            const matchingNote = groundTruthNotes.find(gtNote => 
+                Math.abs(gtNote.start - convertedNote.start) <= tolerance
+            );
+
+            if (matchingNote) {
+                // Check pitch accuracy
+                if (matchingNote.note === convertedNote.note) {
+                    pitchMatches++;
+                }
+
+                // Check timing accuracy
+                if (Math.abs(matchingNote.start - convertedNote.start) <= tolerance) {
+                    timingMatches++;
+                }
+
+                // Check duration accuracy
+                if (Math.abs(matchingNote.duration - convertedNote.duration) <= tolerance) {
+                    durationMatches++;
+                }
+            }
+        });
+
+        const totalNotes = Math.max(convertedNotes.length, groundTruthNotes.length);
+        
+        return {
+            pitch: Math.round((pitchMatches / totalNotes) * 100),
+            timing: Math.round((timingMatches / totalNotes) * 100),
+            duration: Math.round((durationMatches / totalNotes) * 100)
+        };
+    }
+
+    function updateAccuracyDisplay(containerId, accuracy) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const pitchBar = container.querySelector('.metric-fill[data-metric="pitch"]');
+        const timingBar = container.querySelector('.metric-fill[data-metric="timing"]');
+        const durationBar = container.querySelector('.metric-fill[data-metric="duration"]');
+
+        if (pitchBar) {
+            pitchBar.style.width = `${accuracy.pitch}%`;
+            pitchBar.nextElementSibling.textContent = `${accuracy.pitch}%`;
+        }
+
+        if (timingBar) {
+            timingBar.style.width = `${accuracy.timing}%`;
+            timingBar.nextElementSibling.textContent = `${accuracy.timing}%`;
+        }
+
+        if (durationBar) {
+            durationBar.style.width = `${accuracy.duration}%`;
+            durationBar.nextElementSibling.textContent = `${accuracy.duration}%`;
+        }
+    }
+
+    // ===== RESPONSIVE UTILITIES =====
+    function handleResize() {
+        // Redraw visualizations on resize
+        setTimeout(() => {
+            setupWaveforms();
+            setupPianoRolls();
+        }, 100);
+    }
+
+    // ===== EVENT LISTENERS =====
+    window.addEventListener('resize', handleResize);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const steps = ['intro', 'process', 'demo', 'accuracy'];
+            const currentIndex = steps.indexOf(currentSection);
+            
+            if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                navigateToSection(steps[currentIndex - 1]);
+            } else if (e.key === 'ArrowRight' && currentIndex < steps.length - 1) {
+                navigateToSection(steps[currentIndex + 1]);
+            }
+        }
+        
+        // Space bar to play/pause
+        if (e.code === 'Space') {
+            e.preventDefault();
+            const playingButton = document.querySelector('.play-btn.playing');
+            if (playingButton) {
+                playingButton.click();
+            }
+        }
+    });
+
+    // ===== UTILITY FUNCTIONS =====
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // ===== PERFORMANCE MONITORING =====
+    function logPerformance() {
+        if (performance.mark) {
+            performance.mark('humming-sketch-loaded');
+            console.log('🎵 Performance: App loaded in', performance.now(), 'ms');
+        }
+    }
+
+    // Call performance logging
+    logPerformance();
+
+    // ===== EXPORT FOR DEBUGGING =====
+    window.HummingSketch = {
+        navigateToSection,
+        switchUser,
+        togglePlayPause,
+        calculateAccuracy,
+        audioPlayers,
+        midiData,
+        currentSection,
+        currentUser
+    };
 }); 
