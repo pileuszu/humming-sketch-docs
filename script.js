@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupNavigation() {
         const journeySteps = document.querySelectorAll('.journey-step');
         const contentSections = document.querySelectorAll('.content-section');
+        const journeyNav = document.querySelector('.journey-nav');
 
         journeySteps.forEach(step => {
             step.addEventListener('click', () => {
@@ -155,11 +156,61 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Mobile nav toggle
-        const navToggle = document.getElementById('navToggle');
-        if (navToggle) {
-            navToggle.addEventListener('click', toggleMobileNav);
+        // Setup scroll indicator for mobile
+        if (journeyNav) {
+            setupScrollIndicator(journeyNav);
         }
+    }
+
+    function setupScrollIndicator(journeyNav) {
+        function updateScrollIndicator() {
+            const scrollLeft = journeyNav.scrollLeft;
+            const scrollWidth = journeyNav.scrollWidth;
+            const clientWidth = journeyNav.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+            const isScrollable = scrollWidth > clientWidth;
+            const isAtEnd = !isScrollable || scrollLeft >= maxScroll - 10; // 10px tolerance
+            
+            // Debug logging
+            console.log('Scroll Debug:', {
+                scrollLeft,
+                scrollWidth,
+                clientWidth,
+                maxScroll,
+                isScrollable,
+                isAtEnd
+            });
+            
+            if (isScrollable) {
+                journeyNav.classList.add('scrollable');
+                if (isAtEnd) {
+                    journeyNav.classList.add('scroll-end');
+                } else {
+                    journeyNav.classList.remove('scroll-end');
+                }
+            } else {
+                journeyNav.classList.remove('scrollable');
+                journeyNav.classList.remove('scroll-end');
+            }
+        }
+
+        // Check on scroll
+        journeyNav.addEventListener('scroll', updateScrollIndicator);
+        
+        // Check on resize
+        window.addEventListener('resize', () => {
+            setTimeout(updateScrollIndicator, 200);
+        });
+        
+        // Check when content loads
+        window.addEventListener('load', () => {
+            setTimeout(updateScrollIndicator, 500);
+        });
+        
+        // Initial check with multiple attempts
+        setTimeout(updateScrollIndicator, 100);
+        setTimeout(updateScrollIndicator, 500);
+        setTimeout(updateScrollIndicator, 1000);
     }
 
     function navigateToSection(sectionName) {
@@ -181,11 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerSectionAnimations(sectionName);
     }
 
-    function toggleMobileNav() {
-        const navToggle = document.getElementById('navToggle');
-        navToggle.classList.toggle('active');
-        // Add mobile menu functionality if needed
-    }
+
 
     // ===== USER TABS SYSTEM =====
     function setupUserTabs() {
@@ -257,10 +304,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const audio = audioPlayers[audioId];
         if (!audio) return;
 
-        // Stop all other audio
-        stopAllAudio();
-
         if (audio.paused) {
+            // Stop all other audio first
+            stopAllOtherAudio(audioId);
+            
             audio.play();
             button.classList.add('playing');
             button.innerHTML = '<i class="fas fa-pause"></i>';
@@ -269,8 +316,30 @@ document.addEventListener('DOMContentLoaded', function() {
             addPlayingEffect(button);
         } else {
             audio.pause();
-            resetButton(button);
+            button.classList.remove('playing');
+            button.innerHTML = '<i class="fas fa-play"></i>';
+            removePlayingEffect(button);
         }
+    }
+
+    function stopAllOtherAudio(currentAudioId) {
+        Object.keys(audioPlayers).forEach(audioId => {
+            if (audioId !== currentAudioId) {
+                const audio = audioPlayers[audioId];
+                if (!audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            }
+        });
+
+        // Reset all other buttons
+        document.querySelectorAll('.play-btn').forEach(button => {
+            const buttonAudioId = button.getAttribute('data-audio');
+            if (buttonAudioId !== currentAudioId) {
+                resetButton(button);
+            }
+        });
     }
 
     function stopAllAudio() {
@@ -690,8 +759,86 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
+    // ===== EMAIL FUNCTIONALITY =====
+    function setupEmailLink() {
+        const emailLink = document.querySelector('a[href^="mailto:"]');
+        if (emailLink) {
+            emailLink.addEventListener('click', function(e) {
+                const email = 'pillaret20@ajou.ac.kr';
+                const subject = 'Humming Sketch 문의';
+                const body = '안녕하세요,\n\nHumming Sketch 프로젝트에 대해 문의드립니다.\n\n';
+                
+                // Try mailto first
+                const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                // Fallback: copy email to clipboard if mailto fails
+                setTimeout(() => {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(email).then(() => {
+                            showEmailNotification('이메일 주소가 클립보드에 복사되었습니다: ' + email);
+                        }).catch(() => {
+                            showEmailNotification('이메일 주소: ' + email);
+                        });
+                    } else {
+                        showEmailNotification('이메일 주소: ' + email);
+                    }
+                }, 100);
+            });
+        }
+    }
+
+    function showEmailNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'email-notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--neon-blue);
+            box-shadow: var(--shadow-neon), 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            font-size: 1rem;
+            max-width: 400px;
+            backdrop-filter: var(--blur-glass);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            font-weight: 500;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+        
+        // Remove after 3 seconds with animation
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
     // ===== EVENT LISTENERS =====
     window.addEventListener('resize', handleResize);
+    
+    // Setup email functionality
+    setupEmailLink();
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
